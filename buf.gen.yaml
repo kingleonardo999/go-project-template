@@ -1,0 +1,38 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: agent/internal/v1
+  disable:
+    - module: buf.build/googleapis/googleapis
+      file_option: go_package_prefix
+    - module: buf.build/grpc-ecosystem/grpc-gateway
+      file_option: go_package_prefix
+inputs:
+  - directory: api/v1
+plugins:
+  # 1. 生成基础的 Go protobuf 代码
+  - local: protoc-gen-go
+    out: internal/api/v1
+    opt:
+      - paths=source_relative
+
+  # 2. 生成 gRPC 服务端/客户端代码
+  - local: protoc-gen-go-grpc
+    out: internal/api/v1
+    opt:
+      - paths=source_relative
+
+  # 3. 生成 HTTP 反向代理 (grpc-gateway)
+  - local: protoc-gen-grpc-gateway
+    out: internal/api/v1
+    opt:
+      - paths=source_relative
+      - generate_unbound_methods=true
+
+  # 4. 生成 OpenAPI/Swagger 文档
+  - local: protoc-gen-openapiv2
+    out: internal/api/v1
+    opt:
+      - allow_merge=true

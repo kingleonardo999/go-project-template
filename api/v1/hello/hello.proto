@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package hello;
+
+// 1. 引入 googleapis 中的注解定义
+import "google/api/annotations.proto";
+// 2. 引入 grpc-gateway 的特定选项（可选，用于更高级的配置）
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+service HelloService {
+  rpc SayHello(HelloReq) returns (HelloResp) {
+    option (google.api.http) = {
+      get: "/v1/hello/say-hello"
+    };
+  }
+}
+
+message HelloReq {
+  string name = 1;
+}
+
+message HelloResp {
+  string message = 1;
+}

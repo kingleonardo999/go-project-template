@@ -1,0 +1,14 @@
+bin/
+*.exe
+.env
+.idea/
+.vscode/
+.cursor/
+*.swp
+*.swo
+
+# 配置文件（含敏感信息），使用 app.template.yaml 作为模板
+config/app.yaml
+
+.claude
+.codex

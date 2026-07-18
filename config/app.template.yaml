@@ -1,0 +1,16 @@
+server:
+  grpc: ":9090"
+  http: ":8080"
+
+db:
+  host: 127.0.0.1
+  port: 5432
+  user: user
+  password: passwd
+  dbname: dbname
+  sslmode: disable
+
+redis:
+  addr: "127.0.0.1:6379"
+  password: ""
+  db: 0
