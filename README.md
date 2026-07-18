@@ -1,109 +1,128 @@
 # go-project-template
 
-基于 proto + buf + grpc-gateway 的 Go HTTP + gRPC 服务骨架。
+> [中文文档](docs/README.zh-CN.md)
 
-## 技术栈
+A Go HTTP + gRPC service skeleton built with proto + buf + grpc-gateway.
 
-- **Go 1.26** — 语言
-- **Proto** — API 定义
-- **Buf** — protobuf 构建工具
-- **grpc-gateway** — HTTP 反向代理，一个 proto 同时生成 HTTP + gRPC
-- **gRPC** — RPC 框架
-- **OpenAPI** — 自动生成 Swagger 文档
+## Stack
 
-## 快速开始
+- **Go 1.26** — language
+- **Proto3** — API definition
+- **Buf** — protobuf build tool
+- **gRPC** — RPC framework
+- **grpc-gateway** — HTTP reverse proxy, one proto for both HTTP and gRPC
+- **GORM + GORM Gen** — ORM & code generation
+- **PostgreSQL** — database
+- **OpenAPI** — auto-generated Swagger docs
 
-### 安装依赖
+## Getting Started
+
+### Prerequisites
 
 ```bash
-# protobuf 工具链
+# protobuf toolchain
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
 go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
 
-# buf 构建工具
+# buf
 # Windows: scoop install buf
 # macOS:   brew install buf
 # Linux:   go install github.com/bufbuild/buf/cmd/buf@latest
 
-# gRPC 调试工具（可选）
-scoop install grpcurl   # Windows
-brew install grpcurl    # macOS
+# gRPC debug tool (optional)
+# Windows: scoop install grpcurl
+# macOS:   brew install grpcurl
 ```
 
-### 更改配置
+### Setup
+
 ```bash
-cp config/app.template.yaml config/app.yaml   # 首次使用
+cp config/app.template.yaml config/app.yaml   # first time only
 ```
 
-### 生成并运行
+### Generate & Run
 
 ```bash
-# 1. 生成 proto 代码（修改 proto 后需要重新生成）
+# 1. Generate proto code + service registration
 make pb
 
-# 2. 生成数据库 model + dao（需先配好 config/app.yaml 并确保数据库可连）
+# 2. Generate database model & DAO (requires a running PostgreSQL)
 make db
 
-# 3. 编译
+# 3. Build
 make build
 
-# 4. 运行
+# 4. Run
 make run
 
-# gRPC 服务监听 :9090
-# HTTP 服务监听 :8080
+# gRPC listens on :9090
+# HTTP listens on :8080
 ```
 
-## 测试
+## Test
 
 ```bash
-# HTTP 测试
+# HTTP
 curl "http://localhost:8080/v1/hello?name=world"
 
-# gRPC 测试（需安装 grpcurl）
+# gRPC (requires grpcurl)
 grpcurl -plaintext -d '{"name": "world"}' localhost:9090 hello.HelloService/SayHello
 ```
 
-## 目录结构
+## Directory Layout
 
 ```
-├── api/v1/               proto 接口定义
+├── api/v1/               proto definitions
 ├── cmd/
-│   ├── main.go           入口，编排启动流程
-│   ├── router.go         服务注册，启动 gRPC + HTTP 网关
-│   ├── router_gen.go     自动生成的服务注册代码（勿手动编辑）
-│   ├── gormgen/            GORM Gen 代码生成器入口
-│   └── register-gen/     服务注册代码生成器
-├── config/               运行时配置
+│   ├── main.go           entrypoint, orchestrates startup
+│   ├── router.go         server bootstrap (gRPC + HTTP gateway)
+│   ├── router_gen.go     auto-generated service registration (DO NOT EDIT)
+│   ├── gormgen/          GORM Gen code generator
+│   └── register-gen/     service registration code generator
+├── config/               runtime config
 ├── internal/
-│   ├── api/v1/           buf 生成的 proto 代码（勿手动编辑）
-│   ├── config/           配置加载
-│   ├── consts/           全局常量、枚举（预留）
-│   ├── dto/              数据传输对象（预留）
-│   ├── middleware/        gRPC/HTTP 中间件（预留）
-│   ├── model/            GORM Gen 数据模型 + 自定义查询接口
-│   ├── mq/               消息队列（预留）
-│   ├── pkg/              通用工具包（预留，含 i18n 等）
-│   ├── repository/       数据访问层（DB + Cache）
-│   └── service/          业务逻辑层
-├── locales/              国际化 / 自定义错误码消息
-└── scripts/              脚本（SQL、Shell 等，预留）
+│   ├── api/v1/           generated proto code (DO NOT EDIT)
+│   ├── config/           config loading
+│   ├── consts/           global constants, enums (placeholder)
+│   ├── dto/              data transfer objects (placeholder)
+│   ├── middleware/        gRPC interceptors / HTTP middleware (placeholder)
+│   ├── model/            GORM Gen data models + custom query interfaces
+│   ├── mq/               message queue (placeholder)
+│   ├── pkg/              shared utilities (i18n, etc.)
+│   ├── repository/       data access layer (DB + Cache)
+│   └── service/          business logic
+├── locales/              i18n / custom error code messages
+└── scripts/              SQL, shell scripts (placeholder)
 ```
 
-## 添加新服务
+## Adding a New Service
 
-1. 在 `api/v1/` 下创建新的 proto 文件
-2. 定义 service 和 message，添加 `google.api.http` 注解
-3. 运行 `make pb` 生成代码（proto → pb + 自动注册）
-4. 在 `internal/service/` 下实现业务逻辑
+1. Create a proto file under `api/v1/`
+2. Define the service, messages, and `google.api.http` annotations
+3. Run `make pb` — code generation and service registration are automatic
+4. Implement the business logic in `internal/service/`
 
-> 服务注册由 `cmd/register-gen` 自动完成，`make pb` 已包含此步骤。
+> Service registration is handled by `cmd/register-gen` and runs automatically as part of `make pb`.
 
-## Proto 规范
+## Proto Conventions
 
-- 使用 `google.api.http` 注解定义 HTTP 路由
-- 路径格式：`/v1/{service-name}/{action}`，多词用 `-` 连接（如 `/v1/user/model/list`）
-- 所有 proto 文件放在 `api/v1/` 下，按业务分包
-- 生成代码使用 `source_relative` 路径风格
+- Use `google.api.http` annotations to define HTTP routes
+- Route format: `/v1/{service-name}/{action}`, multi-word segments joined with `-`
+  (e.g. `/v1/user/model/list`, `/v1/hello/filter-models`)
+- All proto files go under `api/v1/`, grouped by domain
+- Generated code uses `source_relative` path style
+
+## Makefile Targets
+
+| Target | Description |
+|--------|-------------|
+| `make pb` | Generate proto code + auto-register services |
+| `make db` | Generate GORM model & DAO from database |
+| `make build` | Tidy deps, format, lint, then build |
+| `make run` | Tidy deps, then run the service |
+| `make test` | Run all tests |
+| `make fmt` | Format Go code |
+| `make lint` | Run `go vet` |
+| `make clean` | Remove build artifacts |
