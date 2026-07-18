@@ -3,7 +3,7 @@ managed:
   enabled: true
   override:
     - file_option: go_package_prefix
-      value: agent/internal/v1
+      value: go-project-template/internal/api/v1
   disable:
     - module: buf.build/googleapis/googleapis
       file_option: go_package_prefix

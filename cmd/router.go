@@ -2,13 +2,12 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
+	"os"
 
-	helloPb "go-project-template/internal/api/v1/hello"
 	"go-project-template/internal/config"
-	helloService "go-project-template/internal/service/hello"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
@@ -20,14 +19,16 @@ import (
 func StartGRPC(addr string) {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatalf("gRPC listen error: %v", err)
+		slog.Error("gRPC listen error", "error", err)
+		os.Exit(1)
 	}
 	s := grpc.NewServer()
-	helloPb.RegisterHelloServiceServer(s, helloService.NewService())
+	registerGRPCServices(s)
 	reflection.Register(s)
-	log.Printf("gRPC server listening on %s", addr)
+	slog.Info("gRPC server listening", "addr", addr)
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("gRPC serve error: %v", err)
+		slog.Error("gRPC serve error", "error", err)
+		os.Exit(1)
 	}
 }
 
@@ -36,13 +37,15 @@ func StartHTTP(ctx context.Context, cfg *config.Config) {
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
-	if err := helloPb.RegisterHelloServiceHandlerFromEndpoint(ctx, mux, cfg.Server.GRPC, opts); err != nil {
-		log.Fatalf("register gateway error: %v", err)
+	if err := registerHTTPHandlers(ctx, mux, cfg.Server.GRPC, opts); err != nil {
+		slog.Error("register gateway error", "error", err)
+		os.Exit(1)
 	}
 
 	srv := &http.Server{Addr: cfg.Server.HTTP, Handler: mux}
-	log.Printf("HTTP gateway listening on %s", cfg.Server.HTTP)
+	slog.Info("HTTP gateway listening", "addr", cfg.Server.HTTP)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("HTTP serve error: %v", err)
+		slog.Error("HTTP serve error", "error", err)
+		os.Exit(1)
 	}
 }

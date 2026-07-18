@@ -12,5 +12,8 @@ func SetDB(db *gorm.DB) {
 
 // GetDB 获取 DB 实例，方便测试时替换
 func GetDB() *gorm.DB {
+	if DB == nil {
+		panic("database not initialized, call repository.SetDB() in main")
+	}
 	return DB
 }

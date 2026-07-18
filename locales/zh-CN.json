@@ -1,3 +1,6 @@
 {
-  "hello": "你好"
+  "err_not_found": "资源不存在",
+  "err_invalid_param": "参数错误",
+  "err_internal": "服务器内部错误",
+  "err_unauthorized": "未授权访问"
 }

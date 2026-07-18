@@ -25,7 +25,7 @@ internal/
 ├── middleware/        gRPC 拦截器 / HTTP 中间件
 ├── model/             GORM Gen 生成的数据模型，勿手动编辑
 ├── mq/                消息队列
-├── pkg/               通用工具包
+├── pkg/               通用工具包（如 i18n 等）
 ├── repository/
 │   ├── db/dao/        GORM Gen 生成的 DAO 查询代码，勿手动编辑
 │   ├── db/            手写的数据库查询扩展
@@ -37,6 +37,7 @@ cmd/
 └── gen/               GORM Gen 代码生成器入口
 config/
 └── app.yaml           运行时配置
+locales/                国际化消息 / 自定义错误码消息
 ```
 
 ## 代码生成工作流
@@ -53,7 +54,7 @@ api/v1/*.proto
 
 ```
 PostgreSQL 表结构
-  → go run cmd/gen/            # make db
+  → go run cmd/gormgen/            # make db
   → internal/model/            # 实体 struct
   → internal/repository/db/dao/ # 类型安全 CRUD 方法
 ```
@@ -99,23 +100,20 @@ slog.InfoContext(ctx, "[hello] [SayHello]", "name", req.Name, "user_id", userID)
 所有业务函数和外部调用（数据库、RPC、MQ 等）**必须将 `ctx context.Context` 作为第一个参数**。
 
 - 纯内部工具函数或私有辅助函数可以例外
-- Service 结构体持有 `ctx` 字段，`NewService()` 中赋值为 `context.Background()`，作为基础上下文
+- **不要**在 Service 结构体中保存 `ctx` 字段——每个请求的 `ctx` 由 gRPC 框架通过方法参数传入，包含该请求的 metadata、deadline、trace 等信息
 
 **示例：**
 
 ```go
 type Service struct {
-    ctx context.Context
     pb.UnimplementedHelloServiceServer
 }
 
 func NewService() *Service {
-    return &Service{
-        ctx: context.Background(),
-    }
+    return &Service{}
 }
 
-// 业务方法必须接收 ctx 参数（gRPC 框架传入的请求上下文）
+// 业务方法接收 ctx 参数（gRPC 框架传入的请求上下文）
 func (s *Service) SayHello(ctx context.Context, req *pb.HelloReq) (*pb.HelloResp, error) {
     slog.InfoContext(ctx, "[hello] [SayHello]", "name", req.Name)
     // 调用外部服务时传递 ctx
@@ -179,7 +177,8 @@ service UserService {
 ### 新增服务步骤
 
 1. `api/v1/` 下创建 `xxx/xxx.proto`，定义 service + message + HTTP 注解
-2. `make generate` 生成代码
+2. `make pb` 生成代码（proto → pb + 自动注册）
 3. `internal/service/xxx/` 下实现业务逻辑，嵌入 `UnimplementedXxxServer`
-4. `cmd/router.go` 中注册 gRPC + HTTP 网关
-5. （可选）`internal/repository/db/` 下编写自定义查询
+4. （可选）`internal/repository/db/` 下编写自定义查询
+
+> 服务注册由 `cmd/register-gen` 自动完成，`make pb` 已包含此步骤。

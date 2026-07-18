@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,7 +13,8 @@ import (
 func main() {
 	cfg := config.NewConfig()
 	if err := cfg.Load("config/app.yaml"); err != nil {
-		log.Fatalf("config load error: %v", err)
+		slog.Error("config load error", "error", err)
+		os.Exit(1)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -25,5 +26,5 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("shutting down...")
+	slog.Info("shutting down...")
 }
